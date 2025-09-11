@@ -90,9 +90,13 @@ class TestSeries extends Model implements HasMedia
         return $file;
     }
 
+  
+
+
+      // 🔹 Study Material relation (multi-file support)
     public function getStudyMaterialAttribute()
     {
-        return $this->getMedia('study_material')->last();
+        return $this->getMedia('study_material');
     }
 
     public function getTimetableAttribute()

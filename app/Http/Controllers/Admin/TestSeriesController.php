@@ -32,9 +32,9 @@ class TestSeriesController extends Controller
             $table->addColumn('actions', '&nbsp;');
 
             $table->editColumn('actions', function ($row) {
-                $viewGate      = 'test_series_show';
-                $editGate      = 'test_series_edit';
-                $deleteGate    = 'test_series_delete';
+                $viewGate = 'test_series_show';
+                $editGate = 'test_series_edit';
+                $deleteGate = 'test_series_delete';
                 $crudRoutePart = 'test-seriess';
 
                 return view('partials.datatablesActions', compact(
@@ -94,9 +94,23 @@ class TestSeriesController extends Controller
             $table->editColumn('featured_image_caption', function ($row) {
                 return $row->featured_image_caption ? $row->featured_image_caption : '';
             });
+
+
+
             $table->editColumn('study_material', function ($row) {
-                return $row->study_material ? '<a href="' . $row->study_material->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>' : '';
+                if ($row->study_material && $row->study_material->count() > 0) {
+                    $links = [];
+                    foreach ($row->study_material as $media) {
+                        $links[] = '<a href="' . $media->getUrl() . '" target="_blank">' . trans('global.downloadFile') . '</a>';
+                    }
+                    return implode('<br>', $links);
+                }
+                return '';
             });
+
+
+
+
             $table->editColumn('timetable', function ($row) {
                 if ($photo = $row->timetable) {
                     return sprintf(
@@ -139,7 +153,7 @@ class TestSeriesController extends Controller
             return $table->make(true);
         }
 
-        $faculties              = Faculty::get();
+        $faculties = Faculty::get();
         $test_series_categories = TestSeriesCategory::get();
 
         return view('admin.testSeriess.index', compact('faculties', 'test_series_categories'));
@@ -165,9 +179,15 @@ class TestSeriesController extends Controller
             $testSeries->addMedia(storage_path('tmp/uploads/' . basename($request->input('featured_image'))))->toMediaCollection('featured_image');
         }
 
+
+
+
         if ($request->input('study_material', false)) {
-            $testSeries->addMedia(storage_path('tmp/uploads/' . basename($request->input('study_material'))))->toMediaCollection('study_material');
+            foreach ($request->input('study_material') as $file) {
+                $testSeries->addMedia(storage_path('tmp/uploads/' . basename($file)))->toMediaCollection('study_material');
+            }
         }
+
 
         if ($request->input('timetable', false)) {
             $testSeries->addMedia(storage_path('tmp/uploads/' . basename($request->input('timetable'))))->toMediaCollection('timetable');
@@ -199,7 +219,7 @@ class TestSeriesController extends Controller
         $test_seriess->faculties()->sync($request->input('faculties', []));
         $test_seriess->test_series_categories()->sync($request->input('test_series_categories', []));
         if ($request->input('featured_image', false)) {
-            if (! $test_seriess->featured_image || $request->input('featured_image') !== $test_seriess->featured_image->file_name) {
+            if (!$test_seriess->featured_image || $request->input('featured_image') !== $test_seriess->featured_image->file_name) {
                 if ($test_seriess->featured_image) {
                     $test_seriess->featured_image->delete();
                 }
@@ -209,19 +229,40 @@ class TestSeriesController extends Controller
             $test_seriess->featured_image->delete();
         }
 
+
+
+
         if ($request->input('study_material', false)) {
-            if (! $test_seriess->study_material || $request->input('study_material') !== $test_seriess->study_material->file_name) {
-                if ($test_seriess->study_material) {
-                    $test_seriess->study_material->delete();
+            // pehle se jo files DB me hain unko check karo
+            $existingFiles = $test_seriess->study_material->pluck('file_name')->toArray();
+
+            // jo files request me nahi hain unko delete karo
+            foreach ($test_seriess->study_material as $media) {
+                if (!in_array($media->file_name, $request->input('study_material'))) {
+                    $media->delete();
                 }
-                $test_seriess->addMedia(storage_path('tmp/uploads/' . basename($request->input('study_material'))))->toMediaCollection('study_material');
             }
-        } elseif ($test_seriess->study_material) {
-            $test_seriess->study_material->delete();
+
+            // jo nayi files request me hain unko add karo
+            foreach ($request->input('study_material') as $file) {
+                if (!in_array($file, $existingFiles)) {
+                    $test_seriess->addMedia(storage_path('tmp/uploads/' . basename($file)))
+                        ->toMediaCollection('study_material');
+                }
+            }
+        } else {
+            // agar request me study_material nahi aaya to purane sab delete kar do
+            foreach ($test_seriess->study_material as $media) {
+                $media->delete();
+            }
         }
 
+
+
+
+
         if ($request->input('timetable', false)) {
-            if (! $test_seriess->timetable || $request->input('timetable') !== $test_seriess->timetable->file_name) {
+            if (!$test_seriess->timetable || $request->input('timetable') !== $test_seriess->timetable->file_name) {
                 if ($test_seriess->timetable) {
                     $test_seriess->timetable->delete();
                 }
@@ -267,10 +308,10 @@ class TestSeriesController extends Controller
     {
         abort_if(Gate::denies('test_series_create') && Gate::denies('test_series_edit'), Response::HTTP_FORBIDDEN, '403 Forbidden');
 
-        $model         = new TestSeries();
-        $model->id     = $request->input('crud_id', 0);
+        $model = new TestSeries();
+        $model->id = $request->input('crud_id', 0);
         $model->exists = true;
-        $media         = $model->addMediaFromRequest('upload')->toMediaCollection('ck-media');
+        $media = $model->addMediaFromRequest('upload')->toMediaCollection('ck-media');
 
         return response()->json(['id' => $media->id, 'url' => $media->getUrl()], Response::HTTP_CREATED);
     }

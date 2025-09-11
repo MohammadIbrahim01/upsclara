@@ -389,56 +389,58 @@
 }
 
 </script>
+
+
+
 <script>
     Dropzone.options.studyMaterialDropzone = {
-    url: '{{ route('admin.test-seriess.storeMedia') }}',
-    maxFilesize: 2, // MB
-    maxFiles: 1,
-    addRemoveLinks: true,
-    headers: {
-      'X-CSRF-TOKEN': "{{ csrf_token() }}"
-    },
-    params: {
-      size: 2
-    },
-    success: function (file, response) {
-      $('form').find('input[name="study_material"]').remove()
-      $('form').append('<input type="hidden" name="study_material" value="' + response.name + '">')
-    },
-    removedfile: function (file) {
-      file.previewElement.remove()
-      if (file.status !== 'error') {
-        $('form').find('input[name="study_material"]').remove()
-        this.options.maxFiles = this.options.maxFiles + 1
-      }
-    },
-    init: function () {
-@if(isset($test_seriess) && $test_seriess->study_material)
-  var file = {!! json_encode($test_seriess->study_material) !!}
-      this.options.addedfile.call(this, file)
-      file.previewElement.classList.add('dz-complete')
-      $('form').append('<input type="hidden" name="study_material" value="' + file.file_name + '">')
-      this.options.maxFiles = this.options.maxFiles - 1
-@endif
-    },
-     error: function (file, response) {
-         if ($.type(response) === 'string') {
-             var message = response //dropzone sends it's own error messages in string
-         } else {
-             var message = response.errors.file
-         }
-         file.previewElement.classList.add('dz-error')
-         _ref = file.previewElement.querySelectorAll('[data-dz-errormessage]')
-         _results = []
-         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-             node = _ref[_i]
-             _results.push(node.textContent = message)
-         }
-
-         return _results
-     }
-}
+        url: '{{ route('admin.test-seriess.storeMedia') }}',
+        maxFilesize: 100, // MB
+        addRemoveLinks: true,
+        headers: {
+            'X-CSRF-TOKEN': "{{ csrf_token() }}"
+        },
+        params: {
+            size: 100
+        },
+        success: function (file, response) {
+            // multiple files ke liye hidden input array banega
+            $('form').append('<input type="hidden" name="study_material[]" value="' + response.name + '">')
+        },
+        removedfile: function (file) {
+            file.previewElement.remove();
+            if (file.status !== 'error') {
+                var name = file.upload ? file.upload.filename : file.file_name;
+                $('form').find('input[name="study_material[]"][value="' + name + '"]').remove();
+            }
+        },
+        init: function () {
+            @if(isset($test_seriess) && $test_seriess->study_material)
+                var files = {!! json_encode($test_seriess->study_material) !!};
+                for (var i in files) {
+                    var file = files[i];
+                    this.options.addedfile.call(this, file);
+                    file.previewElement.classList.add('dz-complete');
+                    $('form').append('<input type="hidden" name="study_material[]" value="' + file.file_name + '">');
+                }
+            @endif
+        },
+        error: function (file, response) {
+            var message = $.type(response) === 'string' ? response : response.errors.file;
+            file.previewElement.classList.add('dz-error');
+            var _ref = file.previewElement.querySelectorAll('[data-dz-errormessage]');
+            var _results = [];
+            for (var _i = 0, _len = _ref.length; _i < _len; _i++) {
+                var node = _ref[_i];
+                _results.push(node.textContent = message);
+            }
+            return _results;
+        }
+    }
 </script>
+
+
+
 <script>
     Dropzone.options.timetableDropzone = {
     url: '{{ route('admin.test-seriess.storeMedia') }}',

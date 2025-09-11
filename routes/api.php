@@ -14,6 +14,23 @@ use App\Http\Controllers\Api\FaqController;
 use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\OrderController;
 
+use App\Http\Controllers\Api\AuthController; // 👈 Add this
+
+
+/*
+|--------------------------------------------------------------------------
+| Public Auth APIs (no API key, no Sanctum required)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('v1')->group(function () {
+    Route::post('auth/register', [AuthController::class, 'register'])->name('auth.register');
+    Route::post('auth/login', [AuthController::class, 'login'])->name('auth.login');
+
+      // Forgot / Reset password
+    Route::post('auth/password/forgot', [AuthController::class, 'forgotPassword'])->name('auth.password.forgot');
+    Route::post('auth/password/reset', [AuthController::class, 'resetPassword'])->name('auth.password.reset');
+});
+
 // Protected APIs (require API key)
 Route::group(['prefix' => 'v1', 'as' => 'api.', 'middleware' => 'api.key'], function () {
     // Company API
@@ -78,6 +95,20 @@ Route::group(['prefix' => 'v1', 'as' => 'api.', 'middleware' => 'api.key'], func
 });
 
 // Authenticated APIs
-Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin', 'middleware' => ['auth:sanctum']], function () {
+// Route::group(['prefix' => 'v1', 'as' => 'api.', 'namespace' => 'Api\V1\Admin', 'middleware' => ['auth:sanctum']], function () {
     // Add your authenticated API routes here
+// });
+
+
+/*
+|--------------------------------------------------------------------------
+| User Private APIs (require API key + Sanctum token)
+|--------------------------------------------------------------------------
+*/
+Route::group(['prefix' => 'v1', 'middleware' => ['api.key', 'auth:sanctum']], function () {
+    Route::get('auth/profile', [AuthController::class, 'profile'])->name('auth.profile');
+    Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
+    Route::get('auth/check-status', [AuthController::class, 'checkStatus'])->name('auth.check-status');
+ 
+  
 });

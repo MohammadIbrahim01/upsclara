@@ -55,7 +55,7 @@ class TestSeriesController extends Controller
             $category->test_series->transform(function ($testSeries) {
                 $testSeries->makeHidden(['id', 'media', 'featured_image', 'study_material', 'timetable']);
                 $testSeries->featured_image_url = $this->getTestSeriesImageUrl($testSeries, 'featured_image');
-                $testSeries->study_material_url = $this->getTestSeriesFileUrl($testSeries, 'study_material');
+                $testSeries->study_materials = $this->getTestSeriesFilesUrl($testSeries, 'study_material');
                 $testSeries->timetable_url = $this->getTestSeriesImageUrl($testSeries, 'timetable');
 
                 // Transform faculties
@@ -76,7 +76,7 @@ class TestSeriesController extends Controller
                 $childCategory->test_series->transform(function ($testSeries) {
                     $testSeries->makeHidden(['id', 'media', 'featured_image', 'study_material', 'timetable']);
                     $testSeries->featured_image_url = $this->getTestSeriesImageUrl($testSeries, 'featured_image');
-                    $testSeries->study_material_url = $this->getTestSeriesFileUrl($testSeries, 'study_material');
+                    $testSeries->study_materials = $this->getTestSeriesFilesUrl($testSeries, 'study_material');
                     $testSeries->timetable_url = $this->getTestSeriesImageUrl($testSeries, 'timetable');
 
                     // Transform faculties
@@ -132,7 +132,7 @@ class TestSeriesController extends Controller
         $testSeriesCategory->test_series->transform(function ($testSeries) {
             $testSeries->makeHidden(['id', 'media', 'featured_image', 'study_material', 'timetable']);
             $testSeries->featured_image_url = $this->getTestSeriesImageUrl($testSeries, 'featured_image');
-            $testSeries->study_material_url = $this->getTestSeriesFileUrl($testSeries, 'study_material');
+            $testSeries->study_materials = $this->getTestSeriesFilesUrl($testSeries, 'study_material');
             $testSeries->timetable_url = $this->getTestSeriesImageUrl($testSeries, 'timetable');
 
             // Transform faculties
@@ -177,7 +177,7 @@ class TestSeriesController extends Controller
         // Transform test series
         $testSeries->makeHidden(['id', 'media', 'featured_image', 'study_material', 'timetable']);
         $testSeries->featured_image_url = $this->getTestSeriesImageUrl($testSeries, 'featured_image');
-        $testSeries->study_material_url = $this->getTestSeriesFileUrl($testSeries, 'study_material');
+        $testSeries->study_materials = $this->getTestSeriesFilesUrl($testSeries, 'study_material');
         $testSeries->timetable_url = $this->getTestSeriesImageUrl($testSeries, 'timetable');
         $testSeries->test_series_categories->makeHidden(['id']);
 
@@ -252,6 +252,23 @@ class TestSeriesController extends Controller
         $media = $testSeries->getFirstMedia($collection);
         return $media ? $media->getUrl() : null;
     }
+
+    // multiple files ke liye (Test Series)
+
+    private function getTestSeriesFilesUrl($testSeries, string $collection): array
+    {
+        $mediaItems = $testSeries->getMedia($collection);
+
+        return $mediaItems->map(function ($media) {
+            $cleanName = preg_replace('/^[a-zA-Z0-9]+_/', '', $media->file_name);
+
+            return [
+                'name' => $cleanName,
+                'url' => $media->getUrl(),
+            ];
+        })->toArray();
+    }
+
 
     /**
      * Get featured image URL for faculty
